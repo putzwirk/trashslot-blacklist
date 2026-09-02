@@ -12,7 +12,7 @@
     "environment": "client",
     "entrypoints": {
         "client": [
-            "com.putzwirk.trashslotblacklist.TrashSlotBlacklist"
+            "com.putzwirk.trashslotblacklist.TrashslotBlacklist"
         ]
     },
     "mixins": [
