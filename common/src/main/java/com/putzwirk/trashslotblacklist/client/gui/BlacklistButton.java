@@ -19,6 +19,8 @@ public class BlacklistButton extends AbstractWidget {
     private static final int LINE_HOVER = -12566464;
     private static final int LINE_PRESSED = -16777216;
 
+    private static final float Z_BELOW_TOOLTIP = 175.0F;
+
     private final BlacklistPanel panel;
     private boolean pressed;
 
@@ -51,7 +53,7 @@ public class BlacklistButton extends AbstractWidget {
         int y = getY();
 
         graphics.pose().pushPose();
-        graphics.pose().translate(0.0F, 0.0F, 1000.0F);
+        graphics.pose().translate(0.0F, 0.0F, Z_BELOW_TOOLTIP);
         graphics.fill(x, y, x + SIZE, y + SIZE, borderColor);
         graphics.fill(x + 1, y + 1, x + SIZE - 1, y + SIZE - 1, backgroundColor);
         graphics.fill(x + 2, y + 2, x + SIZE - 2, y + 3, lineColor);
