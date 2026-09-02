@@ -1,0 +1,8 @@
+{
+  "trashslotblacklist.panel_name": "Черный список",
+  "trashslotblacklist.search_hint": "Поиск...",
+  "trashslotblacklist.empty": "Черный список пуст.",
+  "trashslotblacklist.narration.enabled": "Черный список активирован",
+  "trashslotblacklist.narration.disabled": "Черный список деактивирован",
+  "key.trashslotblacklist.trash_and_blacklist": "Удалить & Добавить предмет в черный список"
+}
