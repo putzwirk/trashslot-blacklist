@@ -301,7 +301,7 @@ public class BlacklistPanel extends AbstractWidget {
                 searchBox.setFocused(false);
                 return true;
             }
-            return true;
+            return false;
         }
         return false;
     }

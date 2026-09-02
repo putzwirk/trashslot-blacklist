@@ -94,6 +94,8 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             return;
         }
 
+        trashslotblacklist$panel.setSearchFocused(false);
+
         if (trashslotblacklist$panel.mouseClicked(mouseX, mouseY, button)) {
             cir.setReturnValue(true);
             return;
@@ -135,14 +137,6 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void trashslotblacklist$onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(keyCode, scanCode, modifiers)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.isSearchFocused()) {
-            if (keyCode == 256) {
-                trashslotblacklist$panel.setSearchFocused(false);
-            }
             cir.setReturnValue(true);
             return;
         }

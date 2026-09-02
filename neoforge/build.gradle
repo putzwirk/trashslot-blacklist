@@ -48,8 +48,16 @@ repositories {
             includeGroup 'curse.maven'
         }
     }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 dependencies {
     implementation "curse.maven:trashslot-235577:8163135"
+    implementation "maven.modrinth:balm:21.0.63+neoforge-1.21.1"
 }
