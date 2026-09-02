@@ -79,6 +79,8 @@ public abstract class HandledScreenMixin extends Screen {
             return;
         }
 
+        trashslotblacklist$panel.unfocusSearch();
+
         if (trashslotblacklist$panel.mouseClicked(mouseX, mouseY, button)) {
             cir.setReturnValue(true);
             return;
@@ -125,20 +127,19 @@ public abstract class HandledScreenMixin extends Screen {
         return super.charTyped(codePoint, modifiers);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+    private void trashslotblacklist$onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
+            cir.setReturnValue(true);
+            return;
         }
 
         if (Services.PLATFORM.isBlacklistKeyActiveAndMatches(keyCode, scanCode)) {
             AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
             if (trashslotblacklist$handleTrashAndBlacklist(screen)) {
-                return true;
+                cir.setReturnValue(true);
             }
         }
-
-        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Unique

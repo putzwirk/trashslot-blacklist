@@ -292,6 +292,10 @@ public class BlacklistPanel extends AbstractWidget {
         return false;
     }
 
+    public void unfocusSearch() {
+        searchBox.setFocused(false);
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (expanded && searchBox.isFocused()) {
@@ -302,7 +306,7 @@ public class BlacklistPanel extends AbstractWidget {
                 searchBox.setFocused(false);
                 return true;
             }
-            return true;
+            return false;
         }
         return false;
     }
