@@ -13,9 +13,6 @@ dependencies {
     modImplementation("net.blay09.mods:balm-fabric:7.3.41+1.20.1") {
         exclude group: 'net.blay09.mods', module: 'shared-bridge'
     }
-    include("net.blay09.mods:balm-fabric:7.3.41+1.20.1") {
-        exclude group: 'net.blay09.mods', module: 'shared-bridge'
-    }
     modImplementation "net.blay09.mods:trashslot-fabric:15.1.1+1.20"
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
     implementation project(":common")
