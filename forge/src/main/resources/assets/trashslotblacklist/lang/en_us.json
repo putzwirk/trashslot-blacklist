@@ -1,0 +1,9 @@
+{
+  "key.categories.trashslotblacklist": "Trashslot Blacklist",
+  "key.trashslotblacklist.trash_and_blacklist": "Blacklist item",
+  "trashslotblacklist.empty": "No items blacklisted.",
+  "trashslotblacklist.panel_name": "Blacklist",
+  "trashslotblacklist.search_hint": "Search...",
+  "trashslotblacklist.narration.enabled": "Blacklist enabled",
+  "trashslotblacklist.narration.disabled": "Blacklist disabled"
+}

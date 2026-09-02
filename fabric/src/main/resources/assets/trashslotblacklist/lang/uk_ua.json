@@ -1,0 +1,9 @@
+{
+  "key.categories.trashslotblacklist": "Trashslot Blacklist",
+  "key.trashslotblacklist.trash_and_blacklist": "Кинути предмет в чорний список",
+  "trashslotblacklist.empty": "Чорний список порожній.",
+  "trashslotblacklist.panel_name": "Чорний список",
+  "trashslotblacklist.search_hint": "Пошук...",
+  "trashslotblacklist.narration.enabled": "Чорний список увімкнено",
+  "trashslotblacklist.narration.disabled": "Чорний список вимкнено"
+}
