@@ -5,5 +5,6 @@
   "trashslotblacklist.panel_name": "Blacklist",
   "trashslotblacklist.search_hint": "Search...",
   "trashslotblacklist.narration.enabled": "Blacklist enabled",
-  "trashslotblacklist.narration.disabled": "Blacklist disabled"
+  "trashslotblacklist.narration.disabled": "Blacklist disabled",
+  "trashslotblacklist.remove_hint": "Right-click to remove"
 }

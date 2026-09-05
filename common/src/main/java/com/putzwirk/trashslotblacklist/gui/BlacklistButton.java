@@ -1,6 +1,6 @@
-package com.putzwirk.trashslotblacklist.client.gui;
+package com.putzwirk.trashslotblacklist.gui;
 
-import com.putzwirk.trashslotblacklist.client.util.ButtonStateManager;
+import com.putzwirk.trashslotblacklist.ButtonStateManager;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -31,13 +31,11 @@ public class BlacklistButton extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (!this.visible) {
+        if (!visible) {
             return;
         }
 
-        boolean hovered = isMouseOver(mouseX, mouseY);
-        ButtonStateManager.setButtonHovered(hovered);
-
+        boolean hovered = ButtonStateManager.isHovered();
         boolean open = panel.isExpanded();
         int borderColor = open ? BORDER_OPEN : BORDER_CLOSED;
         int backgroundColor;
@@ -53,7 +51,7 @@ public class BlacklistButton extends AbstractWidget {
         int y = getY();
 
         graphics.pose().pushPose();
-        graphics.pose().translate(0.0F, 0.0F, Z_BELOW_TOOLTIP);
+        graphics.pose().translate(0, 0, Z_BELOW_TOOLTIP);
         graphics.fill(x, y, x + SIZE, y + SIZE, borderColor);
         graphics.fill(x + 1, y + 1, x + SIZE - 1, y + SIZE - 1, backgroundColor);
         graphics.fill(x + 2, y + 2, x + SIZE - 2, y + 3, lineColor);
@@ -64,7 +62,7 @@ public class BlacklistButton extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.active && this.visible && button == 0 && isMouseOver(mouseX, mouseY)) {
+        if (active && visible && button == 0 && isMouseOver(mouseX, mouseY)) {
             pressed = true;
             panel.toggleExpanded();
             return true;

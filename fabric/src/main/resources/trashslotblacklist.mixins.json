@@ -4,13 +4,18 @@
   "package": "com.putzwirk.trashslotblacklist.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [],
-    "client": [
-      "ContainerScreenAccessor",
-      "HandledScreenMixin",
-      "PlayerMixin",
-      "TrashSlotComponentMixin"
+  "client": [
+    "AnvilScreenMixin",
+    "ClientPacketListenerMixin",
+    "ContainerScreenAccessor",
+    "ContainerScreenMixin",
+    "PlayerMixin",
+    "TrashSlotComponentMixin"
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
   }
 }
