@@ -1,5 +1,6 @@
 package com.putzwirk.trashslotblacklist.platform.services;
 
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -16,7 +17,7 @@ public interface IPlatformHelper {
         return isDevelopmentEnvironment() ? "development" : "production";
     }
 
-    boolean isBlacklistKeyActiveAndMatches(int keyCode, int scanCode);
+    boolean isBlacklistKeyActiveAndMatches(KeyEvent event);
 
     void trashDeleteCarried(Player player, ItemStack carried);
 

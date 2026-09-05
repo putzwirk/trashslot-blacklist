@@ -2,11 +2,14 @@ package com.putzwirk.trashslotblacklist.gui;
 
 import com.putzwirk.trashslotblacklist.BlacklistManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -149,7 +152,7 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (!expanded) {
             return;
         }
@@ -167,7 +170,7 @@ public class BlacklistPanel extends AbstractWidget {
         var font = Minecraft.getInstance().font;
 
         Component title = Component.translatable("trashslotblacklist.panel_name");
-        graphics.drawString(font, title, x + PAD, y + 4, -12632257, false);
+        graphics.text(font, title, x + PAD, y + 4, -12632257, false);
 
         int titleWidth = font.width(title);
         int toggleX = x + PAD + titleWidth + 3;
@@ -176,7 +179,7 @@ public class BlacklistPanel extends AbstractWidget {
         toggleSwitch.setY(y + 4);
         toggleSwitch.visible = true;
         toggleSwitch.setEnabled(BlacklistManager.isBlacklistEnabled());
-        toggleSwitch.render(graphics, mouseX, mouseY, partialTick);
+        toggleSwitch.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         int activeProf = BlacklistManager.getActiveProfile();
         int profBtnX = toggleX + TOGGLE_WIDTH + 15;
@@ -196,10 +199,10 @@ public class BlacklistPanel extends AbstractWidget {
             graphics.fill(bx + 8, profBtnY, bx + 9, profBtnY + 9, borderColor);
             graphics.fill(bx, profBtnY + 8, bx + 9, profBtnY + 9, borderColor);
 
-            graphics.drawString(font, String.valueOf(i), bx + 2, profBtnY + 1, textColor, false);
+            graphics.text(font, String.valueOf(i), bx + 2, profBtnY + 1, textColor, false);
         }
 
-        searchBox.render(graphics, mouseX, mouseY, partialTick);
+        searchBox.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         List<ItemStack> items = getFilteredItems();
         int startX = x + PAD;
@@ -226,14 +229,14 @@ public class BlacklistPanel extends AbstractWidget {
         }
     }
 
-    private void renderEmptyMessage(GuiGraphics graphics, int x, int width, int startY) {
+    private void renderEmptyMessage(GuiGraphicsExtractor graphics, int x, int width, int startY) {
         Component message = Component.translatable("trashslotblacklist.empty");
         var font = Minecraft.getInstance().font;
         int messageWidth = font.width(message);
-        graphics.drawString(font, message, x + width / 2 - messageWidth / 2, startY + 4, -7829368, false);
+        graphics.text(font, message, x + width / 2 - messageWidth / 2, startY + 4, -7829368, false);
     }
 
-    private void renderVanillaBorder(GuiGraphics graphics, int x, int y, int width, int height) {
+    private void renderVanillaBorder(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         graphics.fill(x, y, x + width, y + 1, -16777216);
         graphics.fill(x, y, x + 1, y + height, -16777216);
         graphics.fill(x + width - 1, y, x + width, y + height, -16777216);
@@ -244,23 +247,22 @@ public class BlacklistPanel extends AbstractWidget {
         graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, -11184811);
     }
 
-    private void renderSlot(GuiGraphics graphics, ItemStack stack, int x, int y, int mouseX, int mouseY) {
+    private void renderSlot(GuiGraphicsExtractor graphics, ItemStack stack, int x, int y, int mouseX, int mouseY) {
         graphics.fill(x, y, x + SLOT, y + SLOT, -10855846);
         graphics.fill(x, y, x + SLOT, y + 1, -13158601);
         graphics.fill(x, y, x + 1, y + SLOT, -13158601);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, -1);
         graphics.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, -1);
 
-        graphics.renderItem(stack, x + 1, y + 1);
-        graphics.renderItemDecorations(Minecraft.getInstance().font, stack, x, y);
-        graphics.fill(x, y, x + SLOT - 1, y + SLOT - 1, -2130706433);
+        graphics.item(stack, x + 1, y + 1);
+        graphics.itemDecorations(Minecraft.getInstance().font, stack, x, y);
 
         if (mouseX >= x && mouseX < x + SLOT && mouseY >= y && mouseY < y + SLOT) {
-            graphics.renderTooltip(Minecraft.getInstance().font, stack, mouseX, mouseY);
+            graphics.setTooltipForNextFrame(Minecraft.getInstance().font, stack, mouseX, mouseY);
         }
     }
 
-    private void renderScrollbar(GuiGraphics graphics, int sbX, int sbY, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor graphics, int sbX, int sbY, int mouseX, int mouseY) {
         int maxScroll = maxScroll();
         if (maxScroll == 0) {
             return;
@@ -284,20 +286,20 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
         if (expanded && searchBox.isFocused()) {
-            return searchBox.charTyped(codePoint, modifiers);
+            return searchBox.charTyped(event);
         }
         return false;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
         if (expanded && searchBox.isFocused()) {
-            if (searchBox.keyPressed(keyCode, scanCode, modifiers)) {
+            if (searchBox.keyPressed(event)) {
                 return true;
             }
-            if (keyCode == 256) {
+            if (event.key() == 256) {
                 searchBox.setFocused(false);
                 return true;
             }
@@ -307,7 +309,11 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean allowHandlingWhenUnhandled) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.input();
+
         if (!expanded || !isMouseOver(mouseX, mouseY)) {
             searchBox.setFocused(false);
             return false;
@@ -315,7 +321,7 @@ public class BlacklistPanel extends AbstractWidget {
 
         if (toggleSwitch.isMouseOver(mouseX, mouseY)) {
             searchBox.setFocused(false);
-            return toggleSwitch.mouseClicked(mouseX, mouseY, button);
+            return toggleSwitch.mouseClicked(event, allowHandlingWhenUnhandled);
         }
 
         var font = Minecraft.getInstance().font;
@@ -338,7 +344,7 @@ public class BlacklistPanel extends AbstractWidget {
             }
         }
 
-        boolean clickedSearch = searchBox.mouseClicked(mouseX, mouseY, button);
+        boolean clickedSearch = searchBox.mouseClicked(event, allowHandlingWhenUnhandled);
         searchBox.setFocused(clickedSearch || searchBox.isMouseOver(mouseX, mouseY));
         if (clickedSearch) {
             return true;
@@ -391,16 +397,16 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (!expanded) {
             return false;
         }
         if (draggingScrollbar) {
-            updateScrollFromMouse(mouseY);
+            updateScrollFromMouse(event.y());
             return true;
         }
         if (searchBox.isFocused()) {
-            return searchBox.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+            return searchBox.mouseDragged(event, dragX, dragY);
         }
         return false;
     }
@@ -426,13 +432,13 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
         if (!expanded) {
             return false;
         }
         boolean wasDragging = draggingScrollbar;
         draggingScrollbar = false;
-        boolean sbReleased = searchBox.mouseReleased(mouseX, mouseY, button);
+        boolean sbReleased = searchBox.mouseReleased(event);
         return wasDragging || sbReleased;
     }
 

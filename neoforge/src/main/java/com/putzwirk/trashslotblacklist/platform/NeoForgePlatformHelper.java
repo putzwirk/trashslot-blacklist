@@ -1,12 +1,12 @@
 package com.putzwirk.trashslotblacklist.platform;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.putzwirk.trashslotblacklist.KeyBindings;
 import com.putzwirk.trashslotblacklist.platform.services.IPlatformHelper;
 import net.blay09.mods.trashslot.TrashHelper;
+import net.blay09.mods.trashslot.TrashSlotConfig;
 import net.blay09.mods.trashslot.client.TrashSlotGuiHandler;
 import net.blay09.mods.trashslot.client.deletion.DeletionProvider;
-import net.blay09.mods.trashslot.config.TrashSlotConfig;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -27,12 +27,12 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
 
     @Override
     public boolean isDevelopmentEnvironment() {
-        return !FMLLoader.isProduction();
+        return !FMLLoader.getCurrent().isProduction();
     }
 
     @Override
-    public boolean isBlacklistKeyActiveAndMatches(int keyCode, int scanCode) {
-        return KeyBindings.TRASH_AND_BLACKLIST.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode));
+    public boolean isBlacklistKeyActiveAndMatches(KeyEvent event) {
+        return KeyBindings.TRASH_AND_BLACKLIST.matches(event);
     }
 
     @Override

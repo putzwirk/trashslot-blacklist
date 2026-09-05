@@ -9,10 +9,6 @@ neoForge {
     if (at.exists()) {
         accessTransformers.from(at.absolutePath)
     }
-    parchment {
-        minecraftVersion = parchment_minecraft
-        mappingsVersion = parchment_version
-    }
     runs {
         configureEach {
             systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
@@ -42,6 +38,13 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven {
+        name = 'TwelveIterations'
+        url = 'https://maven.twelveiterations.com/repository/maven-public/'
+        content {
+            includeGroup 'net.blay09.mods'
+        }
+    }
+    maven {
         name = 'CurseMaven'
         url = 'https://www.cursemaven.com'
         content {
@@ -58,6 +61,6 @@ repositories {
 }
 
 dependencies {
-    implementation "curse.maven:trashslot-235577:8163135"
-    implementation "maven.modrinth:balm:21.0.63+neoforge-1.21.1"
+    implementation "net.blay09.mods:trashslot-neoforge:${trashslot_neoforge_version}"
+    implementation "net.blay09.mods:balm-neoforge:${balm_neoforge_version}"
 }

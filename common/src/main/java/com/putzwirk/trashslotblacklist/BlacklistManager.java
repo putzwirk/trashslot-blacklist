@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -109,9 +109,9 @@ public final class BlacklistManager {
         for (JsonElement element : array) {
             JsonObject entry = element.isJsonObject() ? element.getAsJsonObject() : null;
             String itemId = entry != null ? entry.get("item").getAsString() : element.getAsString();
-            ResourceLocation id = ResourceLocation.tryParse(itemId);
+            Identifier id = Identifier.tryParse(itemId);
             if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
-                targetSet.add(BuiltInRegistries.ITEM.get(id));
+                BuiltInRegistries.ITEM.get(id).ifPresent(ref -> targetSet.add(ref.value()));
             }
         }
     }

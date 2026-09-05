@@ -1,6 +1,7 @@
 package com.putzwirk.trashslotblacklist.mixin;
 
 import com.putzwirk.trashslotblacklist.BlacklistManager;
+import com.putzwirk.trashslotblacklist.BoxDebug;
 import com.putzwirk.trashslotblacklist.gui.BlacklistButton;
 import com.putzwirk.trashslotblacklist.gui.BlacklistPanel;
 import com.putzwirk.trashslotblacklist.gui.PanelHolder;
@@ -8,9 +9,12 @@ import com.putzwirk.trashslotblacklist.platform.Services;
 import net.blay09.mods.trashslot.client.TrashSlotGuiHandler;
 import net.blay09.mods.trashslot.client.gui.TrashSlotComponent;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -51,20 +55,9 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
         trashslotblacklist$button.visible = false;
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
-    private void trashslotblacklist$onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+    @Inject(method = "extractContents", at = @At("TAIL"))
+    private void trashslotblacklist$onExtractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         trashslotblacklist$ensureWidgets();
-
-        AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-        ContainerScreenAccessor accessor = (ContainerScreenAccessor) screen;
-
-        trashslotblacklist$panel.layout(
-                accessor.getLeftPos(),
-                accessor.getTopPos(),
-                accessor.getImageWidth(),
-                accessor.getImageHeight(),
-                screen.height
-        );
 
         TrashSlotComponent component = TrashSlotGuiHandler.getTrashSlotComponent();
         if (component != null && component.isVisible()) {
@@ -72,76 +65,77 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             trashslotblacklist$button.setX(rect.getX() + rect.getWidth() - 6);
             trashslotblacklist$button.setY(rect.getY() - 2);
             trashslotblacklist$button.visible = true;
+            BoxDebug.instance.log("button shown comp=present rect=" + rect.getX() + "," + rect.getY() + "," + rect.getWidth() + "," + rect.getHeight()
+                    + " btn=" + trashslotblacklist$button.getX() + "," + trashslotblacklist$button.getY() + " screenH=" + this.height);
         } else {
             trashslotblacklist$button.visible = false;
+            BoxDebug.instance.log("button hidden comp=" + (component != null) + " visible=" + (component != null && component.isVisible()));
         }
 
-        trashslotblacklist$button.render(graphics, mouseX, mouseY, partialTick);
-        trashslotblacklist$panel.render(graphics, mouseX, mouseY, partialTick);
+        trashslotblacklist$button.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    private void trashslotblacklist$onMouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY, CallbackInfoReturnable<Boolean> cir) {
         if (trashslotblacklist$panel != null && trashslotblacklist$panel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
-            return true;
+            cir.setReturnValue(true);
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void trashslotblacklist$onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    private void trashslotblacklist$onMouseClicked(MouseButtonEvent event, boolean allowHandlingWhenUnhandled, CallbackInfoReturnable<Boolean> cir) {
         if (trashslotblacklist$panel == null) {
             return;
         }
 
         trashslotblacklist$panel.setSearchFocused(false);
 
-        if (trashslotblacklist$panel.mouseClicked(mouseX, mouseY, button)) {
+        if (trashslotblacklist$panel.mouseClicked(event, allowHandlingWhenUnhandled)) {
             cir.setReturnValue(true);
             return;
         }
 
-        if (trashslotblacklist$button.mouseClicked(mouseX, mouseY, button)) {
+        if (trashslotblacklist$button.mouseClicked(event, allowHandlingWhenUnhandled)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
-    private void trashslotblacklist$onMouseReleased(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    private void trashslotblacklist$onMouseReleased(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
         if (trashslotblacklist$panel == null) {
             return;
         }
 
-        boolean handled = trashslotblacklist$button.mouseReleased(mouseX, mouseY, button);
-        handled |= trashslotblacklist$panel.mouseReleased(mouseX, mouseY, button);
+        boolean handled = trashslotblacklist$button.mouseReleased(event);
+        handled |= trashslotblacklist$panel.mouseReleased(event);
         if (handled) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
-    private void trashslotblacklist$onMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY, CallbackInfoReturnable<Boolean> cir) {
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+    private void trashslotblacklist$onMouseDragged(MouseButtonEvent event, double dragX, double dragY, CallbackInfoReturnable<Boolean> cir) {
+        if (trashslotblacklist$panel != null && trashslotblacklist$panel.mouseDragged(event, dragX, dragY)) {
             cir.setReturnValue(true);
         }
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.charTyped(codePoint, modifiers)) {
+    public boolean charTyped(CharacterEvent event) {
+        if (trashslotblacklist$panel != null && trashslotblacklist$panel.charTyped(event)) {
             return true;
         }
-        return super.charTyped(codePoint, modifiers);
+        return super.charTyped(event);
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
-    private void trashslotblacklist$onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(keyCode, scanCode, modifiers)) {
+    private void trashslotblacklist$onKeyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+        if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(event)) {
             cir.setReturnValue(true);
             return;
         }
 
-        if (!Services.PLATFORM.isBlacklistKeyActiveAndMatches(keyCode, scanCode)) {
+        if (!Services.PLATFORM.isBlacklistKeyActiveAndMatches(event)) {
             return;
         }
 

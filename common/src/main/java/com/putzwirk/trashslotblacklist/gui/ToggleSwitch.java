@@ -1,10 +1,11 @@
 package com.putzwirk.trashslotblacklist.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 public class ToggleSwitch extends AbstractWidget {
@@ -37,7 +38,7 @@ public class ToggleSwitch extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) {
             return;
         }
@@ -84,8 +85,8 @@ public class ToggleSwitch extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (active && visible && button == 0 && isMouseOver(mouseX, mouseY)) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean allowHandlingWhenUnhandled) {
+        if (active && visible && event.input() == 0 && isMouseOver(event.x(), event.y())) {
             enabled = !enabled;
             playDownSound(Minecraft.getInstance().getSoundManager());
             if (onToggle != null) {

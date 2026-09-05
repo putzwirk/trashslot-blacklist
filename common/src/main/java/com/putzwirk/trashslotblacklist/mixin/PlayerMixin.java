@@ -39,7 +39,7 @@ public abstract class PlayerMixin {
     private void trashslotblacklist$onTick(CallbackInfo ci) {
         Player self = (Player) (Object) this;
         Minecraft minecraft = Minecraft.getInstance();
-        if (!self.level().isClientSide || self != minecraft.player) {
+        if (!self.level().isClientSide() || self != minecraft.player) {
             return;
         }
 

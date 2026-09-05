@@ -9,25 +9,21 @@ neoForge {
     if (at.exists()) {
         accessTransformers.from(at.absolutePath)
     }
-    parchment {
-        minecraftVersion = parchment_minecraft
-        mappingsVersion = parchment_version
-    }
 }
 
 dependencies {
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
-    compileOnly "curse.maven:trashslot-235577:8163135"
+    compileOnly "net.blay09.mods:trashslot-common:${trashslot_neoforge_version}"
 }
 
 repositories {
     maven {
-        name = 'CurseMaven'
-        url = 'https://www.cursemaven.com'
+        name = 'TwelveIterations'
+        url = 'https://maven.twelveiterations.com/repository/maven-public/'
         content {
-            includeGroup 'curse.maven'
+            includeGroup 'net.blay09.mods'
         }
     }
 }

@@ -2,10 +2,11 @@ package com.putzwirk.trashslotblacklist.platform;
 
 import com.putzwirk.trashslotblacklist.KeyBindings;
 import com.putzwirk.trashslotblacklist.platform.services.IPlatformHelper;
+import net.blay09.mods.trashslot.TrashSlotConfig;
 import net.blay09.mods.trashslot.client.TrashSlotGuiHandler;
 import net.blay09.mods.trashslot.client.deletion.DeletionProvider;
-import net.blay09.mods.trashslot.config.TrashSlotConfig;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -28,9 +29,9 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public boolean isBlacklistKeyActiveAndMatches(int keyCode, int scanCode) {
+    public boolean isBlacklistKeyActiveAndMatches(KeyEvent event) {
         return KeyBindings.TRASH_AND_BLACKLIST != null
-                && KeyBindings.TRASH_AND_BLACKLIST.isActiveAndMatchesKey(keyCode, scanCode, 0);
+                && KeyBindings.TRASH_AND_BLACKLIST.isActiveAndMatchesKey(event.key(), event.scancode(), event.modifiers());
     }
 
     @Override
@@ -48,6 +49,10 @@ public class FabricPlatformHelper implements IPlatformHelper {
         if (provider == null) {
             return;
         }
-        provider.deleteContainerItem(menu, slotIndex, simulate, TrashSlotGuiHandler.getTrashSlot());
+        Player player = net.minecraft.client.Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        provider.deleteContainerItem(player, menu, slotIndex, simulate, TrashSlotGuiHandler.getTrashSlot());
     }
 }
