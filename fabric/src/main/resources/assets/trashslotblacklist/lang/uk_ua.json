@@ -5,5 +5,6 @@
   "trashslotblacklist.panel_name": "Чорний список",
   "trashslotblacklist.search_hint": "Пошук...",
   "trashslotblacklist.narration.enabled": "Чорний список увімкнено",
-  "trashslotblacklist.narration.disabled": "Чорний список вимкнено"
+  "trashslotblacklist.narration.disabled": "Чорний список вимкнено",
+  "trashslotblacklist.remove_hint": "ПКМ — прибрати зі списку"
 }

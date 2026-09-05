@@ -1,6 +1,5 @@
 package com.putzwirk.trashslotblacklist.mixin;
 
-import com.putzwirk.trashslotblacklist.BoxDebug;
 import com.putzwirk.trashslotblacklist.gui.BlacklistPanel;
 import com.putzwirk.trashslotblacklist.gui.PanelHolder;
 import net.minecraft.client.Minecraft;
@@ -36,8 +35,6 @@ public abstract class ContainerScreenPanelMixin {
                 accessor.getImageHeight(),
                 screen.height
         );
-        BoxDebug.instance.log("panel bg draw y=" + panel.getY() + " h=" + panel.getHeight());
-
         Minecraft minecraft = Minecraft.getInstance();
         int mouseX = (int) minecraft.mouseHandler.getScaledXPos(minecraft.getWindow());
         int mouseY = (int) minecraft.mouseHandler.getScaledYPos(minecraft.getWindow());

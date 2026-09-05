@@ -1,7 +1,6 @@
 package com.putzwirk.trashslotblacklist.gui;
 
 import com.putzwirk.trashslotblacklist.ButtonStateManager;
-import com.putzwirk.trashslotblacklist.BoxDebug;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -34,10 +33,7 @@ public class BlacklistButton extends AbstractWidget {
         if (!visible) {
             return;
         }
-        BoxDebug.instance.log("btn draw x=" + getX() + " y=" + getY() + " w=" + getWidth() + " h=" + getHeight() + " mx=" + mouseX + " my=" + mouseY);
-
-        boolean hovered = isMouseOver(mouseX, mouseY);
-        ButtonStateManager.setHovered(hovered);
+        boolean hovered = ButtonStateManager.isHovered();
 
         boolean open = panel.isExpanded();
         int borderColor = open ? BORDER_OPEN : BORDER_CLOSED;

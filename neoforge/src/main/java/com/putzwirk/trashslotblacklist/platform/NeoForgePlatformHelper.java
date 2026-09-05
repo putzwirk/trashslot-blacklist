@@ -45,7 +45,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean simulate) {
+    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean deleteAll) {
         DeletionProvider provider = TrashSlotConfig.getDeletionProvider();
         if (provider == null) {
             return;
@@ -58,6 +58,6 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
         if (player == null) {
             return;
         }
-        provider.deleteContainerItem(player, menu, slotIndex, simulate, TrashSlotGuiHandler.getTrashSlot());
+        provider.deleteContainerItem(player, menu, slotIndex, deleteAll, TrashSlotGuiHandler.getTrashSlot());
     }
 }

@@ -1,18 +1,27 @@
 package com.putzwirk.trashslotblacklist.gui;
 
+import com.putzwirk.trashslotblacklist.BlacklistData;
+import com.putzwirk.trashslotblacklist.BlacklistEntryView;
 import com.putzwirk.trashslotblacklist.BlacklistManager;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -24,16 +33,34 @@ public class BlacklistPanel extends AbstractWidget {
     private static final int HEADER_HEIGHT = 14;
     private static final int SEARCH_HEIGHT = 12;
     private static final int SCROLLBAR_WIDTH = 5;
+    private static final int TOGGLE_GAP = 15;
+    private static final int PROFILE_COUNT = BlacklistData.MAX_PROFILE;
+    private static final int PROFILE_SIZE = 9;
+    private static final int PROFILE_SPACING = 11;
 
-    private static final int TOGGLE_WIDTH = 12;
+    private static final int BACKGROUND_COLOR = -3750202;
+    private static final int SLOT_BACKGROUND = -10855846;
+    private static final int SLOT_BORDER_DARK = -13158601;
+    private static final int TITLE_COLOR = -12632257;
+    private static final int EMPTY_COLOR = -7829368;
+    private static final int TRACK_COLOR = -16777216;
+    private static final int THUMB_COLOR = -3750202;
+    private static final int THUMB_COLOR_HOVER = -5592406;
+    private static final int BUTTON_COLOR = 0xFFE0E0E0;
+    private static final int BUTTON_BORDER = 0xFF8B8B8B;
+    private static final int BUTTON_BORDER_HOVER = 0xFF373737;
+    private static final int BUTTON_ICON = 0xFF555555;
+
+    private static final Component REMOVE_HINT = Component.translatable("trashslotblacklist.remove_hint").withStyle(ChatFormatting.GRAY);
 
     private int maxRows = 1;
     private final ToggleSwitch toggleSwitch;
     private final EditBox searchBox;
+    private final ScrollbarModel scrollbar = new ScrollbarModel();
 
     private boolean expanded;
-    private int scroll;
     private boolean draggingScrollbar;
+    private List<BlacklistEntryView> filteredEntries = List.of();
 
     public BlacklistPanel() {
         super(0, 0, panelWidth(), 0, Component.empty());
@@ -46,7 +73,7 @@ public class BlacklistPanel extends AbstractWidget {
         this.searchBox.setTextColor(0xFFFFFFFF);
         this.searchBox.setBordered(true);
         this.searchBox.setCanLoseFocus(true);
-        this.searchBox.setResponder(s -> this.scroll = 0);
+        this.searchBox.setResponder(s -> scrollbar.scrollTo(0));
 
         updateHeight();
     }
@@ -55,8 +82,7 @@ public class BlacklistPanel extends AbstractWidget {
         int targetY = guiTop + imageHeight + 2;
         int availableSpace = screenHeight - targetY - PAD;
 
-        int topOffset = HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 2);
-        int rowsPossible = (availableSpace - topOffset - PAD) / SLOT;
+        int rowsPossible = (availableSpace - topOffset() - PAD) / SLOT;
         maxRows = Math.max(1, rowsPossible);
 
         setX(guiLeft + (imageWidth - getWidth()) / 2);
@@ -66,7 +92,11 @@ public class BlacklistPanel extends AbstractWidget {
         searchBox.setY(getY() + HEADER_HEIGHT + PAD);
         searchBox.setWidth(getWidth() - (PAD * 2));
 
-        updateHeight();
+        refreshEntries();
+    }
+
+    private static int topOffset() {
+        return HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 2);
     }
 
     public static int panelWidth() {
@@ -80,17 +110,62 @@ public class BlacklistPanel extends AbstractWidget {
     public void toggleExpanded() {
         expanded = !expanded;
         if (expanded) {
-            scroll = 0;
+            scrollbar.scrollTo(0);
             searchBox.setValue("");
         } else {
             searchBox.setFocused(false);
         }
         draggingScrollbar = false;
+        refreshEntries();
+    }
+
+    private void refreshEntries() {
+        List<BlacklistEntryView> entries = BlacklistManager.getBlacklistedEntries();
+        List<BlacklistEntryView> filtered = filterEntries(entries);
+        int totalRows = Math.max(1, (filtered.size() + COLS - 1) / COLS);
+        scrollbar.update(totalRows, maxRows);
+        this.filteredEntries = filtered;
         updateHeight();
     }
 
-    public void scroll(int amount) {
-        setScroll(scroll - amount);
+    private int contentTop() {
+        return getY() + topOffset();
+    }
+
+    private int trackHeight() {
+        return maxRows * SLOT;
+    }
+
+    private boolean isOverScrollbar(double mouseX, double mouseY) {
+        int sbX = getX() + getWidth() - SCROLLBAR_WIDTH - PAD;
+        return mouseX >= sbX && mouseX < sbX + SCROLLBAR_WIDTH
+                && mouseY >= contentTop() && mouseY < contentTop() + trackHeight();
+    }
+
+    private static int titleWidth() {
+        return Minecraft.getInstance().font.width(Component.translatable("trashslotblacklist.panel_name"));
+    }
+
+    private int profileButtonX(int profile) {
+        return getX() + PAD + titleWidth() + 3 + ToggleSwitch.WIDTH + TOGGLE_GAP + (profile - 1) * PROFILE_SPACING;
+    }
+
+    private int profileButtonY() {
+        return getY() + 3;
+    }
+
+    private int profileAt(double mouseX, double mouseY) {
+        int buttonY = profileButtonY();
+        if (mouseY < buttonY || mouseY >= buttonY + PROFILE_SIZE) {
+            return -1;
+        }
+        for (int profile = 1; profile <= PROFILE_COUNT; profile++) {
+            int buttonX = profileButtonX(profile);
+            if (mouseX >= buttonX && mouseX < buttonX + PROFILE_SIZE) {
+                return profile;
+            }
+        }
+        return -1;
     }
 
     private void updateHeight() {
@@ -101,44 +176,47 @@ public class BlacklistPanel extends AbstractWidget {
         if (!expanded) {
             return 0;
         }
-        return getVisibleRows() * SLOT + HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 3);
+        return scrollbar.visibleRowCount() * SLOT + HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 3);
     }
 
-    private List<ItemStack> getFilteredItems() {
-        List<ItemStack> items = BlacklistManager.getBlacklistedItems();
+    private List<BlacklistEntryView> filterEntries(List<BlacklistEntryView> entries) {
         String query = searchBox.getValue().trim().toLowerCase(Locale.ROOT);
         if (query.isEmpty()) {
-            return items;
+            return entries;
         }
-        return items.stream()
-                .filter(stack -> stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query))
+        return entries.stream()
+                .filter(view -> matches(view, query))
                 .toList();
     }
 
-    private int totalRows() {
-        int size = getFilteredItems().size();
-        return Math.max(1, (size + COLS - 1) / COLS);
+    private static boolean matches(BlacklistEntryView view, String query) {
+        ItemStack stack = view.stack();
+        if (stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query)) {
+            return true;
+        }
+        Identifier key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (key != null && key.toString().toLowerCase(Locale.ROOT).contains(query)) {
+            return true;
+        }
+        return enchantmentNameMatches(stack, query);
     }
 
-    private int getVisibleRows() {
-        return Math.min(totalRows(), maxRows);
-    }
-
-    private int maxScroll() {
-        return Math.max(0, totalRows() - maxRows);
-    }
-
-    private void setScroll(int newScroll) {
-        scroll = Math.max(0, Math.min(maxScroll(), newScroll));
+    private static boolean enchantmentNameMatches(ItemStack stack, String query) {
+        for (String enchantmentId : BlacklistManager.getEnchantmentIds(stack)) {
+            Holder<Enchantment> holder = BlacklistManager.getEnchantmentHolder(enchantmentId);
+            if (holder != null && Enchantment.getFullname(holder, 1).getString().toLowerCase(Locale.ROOT).contains(query)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (expanded && isMouseOver(mouseX, mouseY) && totalRows() > maxRows) {
-            scroll((int) Math.signum(scrollY));
-            return true;
+        if (!expanded || !isMouseOver(mouseX, mouseY) || scrollbar.maxScroll() == 0) {
+            return false;
         }
-        return false;
+        return scrollbar.scrollBy(-(int) Math.signum(scrollY));
     }
 
     @Override
@@ -156,84 +234,86 @@ public class BlacklistPanel extends AbstractWidget {
         if (!expanded) {
             return;
         }
-        updateHeight();
+        refreshEntries();
 
         int x = getX();
         int y = getY();
         int width = getWidth();
         int height = getHeight();
-        int visibleRows = getVisibleRows();
 
-        graphics.fill(x, y, x + width, y + height, -3750202);
+        graphics.fill(x, y, x + width, y + height, BACKGROUND_COLOR);
         renderVanillaBorder(graphics, x, y, width, height);
 
         var font = Minecraft.getInstance().font;
-
         Component title = Component.translatable("trashslotblacklist.panel_name");
-        graphics.text(font, title, x + PAD, y + 4, -12632257, false);
+        graphics.text(font, title, x + PAD, y + 4, TITLE_COLOR, false);
 
-        int titleWidth = font.width(title);
-        int toggleX = x + PAD + titleWidth + 3;
-
+        int toggleX = x + PAD + titleWidth() + 3;
         toggleSwitch.setX(toggleX);
         toggleSwitch.setY(y + 4);
         toggleSwitch.visible = true;
         toggleSwitch.setEnabled(BlacklistManager.isBlacklistEnabled());
         toggleSwitch.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        int activeProf = BlacklistManager.getActiveProfile();
-        int profBtnX = toggleX + TOGGLE_WIDTH + 15;
-        int profBtnY = y + 3;
-
-        for (int i = 1; i <= 3; i++) {
-            int bx = profBtnX + (i - 1) * 11;
-            boolean isActive = (i == activeProf);
-
-            int bgColor = isActive ? 0xFFFFFFFF : 0xFFE0E0E0;
-            int textColor = isActive ? 0xFF000000 : 0xFF555555;
-            int borderColor = isActive ? 0xFF373737 : 0xFF8B8B8B;
-
-            graphics.fill(bx, profBtnY, bx + 9, profBtnY + 9, bgColor);
-            graphics.fill(bx, profBtnY, bx + 9, profBtnY + 1, borderColor);
-            graphics.fill(bx, profBtnY, bx + 1, profBtnY + 9, borderColor);
-            graphics.fill(bx + 8, profBtnY, bx + 9, profBtnY + 9, borderColor);
-            graphics.fill(bx, profBtnY + 8, bx + 9, profBtnY + 9, borderColor);
-
-            graphics.text(font, String.valueOf(i), bx + 2, profBtnY + 1, textColor, false);
-        }
-
+        renderProfileButtons(graphics);
         searchBox.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        List<ItemStack> items = getFilteredItems();
+        List<BlacklistEntryView> entries = filteredEntries;
         int startX = x + PAD;
-        int startY = y + HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 2);
+        int top = contentTop();
 
-        if (items.isEmpty()) {
-            renderEmptyMessage(graphics, x, width, startY);
+        if (entries.isEmpty()) {
+            renderEmptyMessage(graphics, x, width, top);
             return;
         }
 
+        int visibleRows = scrollbar.visibleRowCount();
         for (int row = 0; row < visibleRows; row++) {
-            int rowIndex = row + scroll;
             for (int col = 0; col < COLS; col++) {
-                int itemIndex = rowIndex * COLS + col;
-                if (itemIndex >= items.size()) {
+                int index = (row + scrollbar.getScroll()) * COLS + col;
+                if (index >= entries.size()) {
                     continue;
                 }
-                renderSlot(graphics, items.get(itemIndex), startX + col * SLOT, startY + row * SLOT, mouseX, mouseY);
+                renderSlot(graphics, entries.get(index).stack(), startX + col * SLOT, top + row * SLOT, mouseX, mouseY);
             }
         }
 
-        if (totalRows() > maxRows) {
-            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - PAD, startY, mouseX, mouseY);
+        if (scrollbar.maxScroll() > 0) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - PAD, top, mouseX, mouseY);
         }
     }
 
-    private void renderEmptyMessage(GuiGraphicsExtractor graphics, int x, int width, int startY) {
+    private void renderProfileButtons(GuiGraphicsExtractor graphics) {
+        var font = Minecraft.getInstance().font;
+        int activeProfile = BlacklistManager.getActiveProfile();
+        int buttonY = profileButtonY();
+
+        for (int profile = 1; profile <= PROFILE_COUNT; profile++) {
+            int bx = profileButtonX(profile);
+            boolean isActive = (profile == activeProfile);
+
+            int bgColor = isActive ? 0xFFFFFFFF : BUTTON_COLOR;
+            int textColor = isActive ? 0xFF000000 : BUTTON_ICON;
+            int borderColor = isActive ? BUTTON_BORDER_HOVER : BUTTON_BORDER;
+
+            renderPanelButton(graphics, bx, buttonY, bgColor, borderColor);
+            graphics.text(font, String.valueOf(profile), bx + 2, buttonY + 1, textColor, false);
+        }
+    }
+
+    private static void renderPanelButton(GuiGraphicsExtractor graphics, int x, int y, int bgColor, int borderColor) {
+        graphics.fill(x, y, x + PROFILE_SIZE, y + PROFILE_SIZE, bgColor);
+        graphics.fill(x, y, x + PROFILE_SIZE, y + 1, borderColor);
+        graphics.fill(x, y, x + 1, y + PROFILE_SIZE, borderColor);
+        graphics.fill(x + PROFILE_SIZE - 1, y, x + PROFILE_SIZE, y + PROFILE_SIZE, borderColor);
+        graphics.fill(x, y + PROFILE_SIZE - 1, x + PROFILE_SIZE, y + PROFILE_SIZE, borderColor);
+    }
+
+    private void renderEmptyMessage(GuiGraphicsExtractor graphics, int x, int width, int top) {
         Component message = Component.translatable("trashslotblacklist.empty");
         var font = Minecraft.getInstance().font;
         int messageWidth = font.width(message);
-        graphics.text(font, message, x + width / 2 - messageWidth / 2, startY + 4, -7829368, false);
+        graphics.text(font, message, x + width / 2 - messageWidth / 2, top + 4, EMPTY_COLOR, false);
     }
 
     private void renderVanillaBorder(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
@@ -248,7 +328,7 @@ public class BlacklistPanel extends AbstractWidget {
     }
 
     private void renderSlot(GuiGraphicsExtractor graphics, ItemStack stack, int x, int y, int mouseX, int mouseY) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, -10855846);
+        graphics.fill(x, y, x + SLOT, y + SLOT, SLOT_BACKGROUND);
         graphics.fill(x, y, x + SLOT, y + 1, -13158601);
         graphics.fill(x, y, x + 1, y + SLOT, -13158601);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, -1);
@@ -258,25 +338,22 @@ public class BlacklistPanel extends AbstractWidget {
         graphics.itemDecorations(Minecraft.getInstance().font, stack, x, y);
 
         if (mouseX >= x && mouseX < x + SLOT && mouseY >= y && mouseY < y + SLOT) {
-            graphics.setTooltipForNextFrame(Minecraft.getInstance().font, stack, mouseX, mouseY);
+            var minecraft = Minecraft.getInstance();
+            List<Component> tooltip = new ArrayList<>(Screen.getTooltipFromItem(minecraft, stack));
+            tooltip.add(REMOVE_HINT);
+            graphics.setComponentTooltipForNextFrame(minecraft.font, tooltip, mouseX, mouseY);
         }
     }
 
     private void renderScrollbar(GuiGraphicsExtractor graphics, int sbX, int sbY, int mouseX, int mouseY) {
-        int maxScroll = maxScroll();
-        if (maxScroll == 0) {
-            return;
-        }
+        int trackHeight = trackHeight();
+        graphics.fill(sbX, sbY, sbX + SCROLLBAR_WIDTH, sbY + trackHeight, TRACK_COLOR);
 
-        int trackHeight = maxRows * SLOT;
-        graphics.fill(sbX, sbY, sbX + SCROLLBAR_WIDTH, sbY + trackHeight, -16777216);
-
-        int thumbHeight = Math.max(6, maxRows * trackHeight / totalRows());
-        int trackTravel = Math.max(1, trackHeight - thumbHeight);
-        int thumbY = sbY + (int) (trackTravel * ((float) scroll / maxScroll));
+        int thumbHeight = scrollbar.thumbHeight(trackHeight);
+        int thumbY = scrollbar.thumbY(sbY, trackHeight);
 
         boolean hovered = mouseX >= sbX && mouseX < sbX + SCROLLBAR_WIDTH && mouseY >= thumbY && mouseY < thumbY + thumbHeight;
-        int color = draggingScrollbar || hovered ? -5592406 : -3750202;
+        int color = draggingScrollbar || hovered ? THUMB_COLOR_HOVER : THUMB_COLOR;
 
         graphics.fill(sbX, thumbY, sbX + SCROLLBAR_WIDTH, thumbY + thumbHeight, color);
         graphics.fill(sbX, thumbY, sbX + SCROLLBAR_WIDTH, thumbY + 1, -1);
@@ -296,14 +373,7 @@ public class BlacklistPanel extends AbstractWidget {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (expanded && searchBox.isFocused()) {
-            if (searchBox.keyPressed(event)) {
-                return true;
-            }
-            if (event.key() == 256) {
-                searchBox.setFocused(false);
-                return true;
-            }
-            return false;
+            return searchBox.keyPressed(event);
         }
         return false;
     }
@@ -318,128 +388,86 @@ public class BlacklistPanel extends AbstractWidget {
             searchBox.setFocused(false);
             return false;
         }
+        refreshEntries();
 
         if (toggleSwitch.isMouseOver(mouseX, mouseY)) {
             searchBox.setFocused(false);
             return toggleSwitch.mouseClicked(event, allowHandlingWhenUnhandled);
         }
 
-        var font = Minecraft.getInstance().font;
-        Component title = Component.translatable("trashslotblacklist.panel_name");
-        int titleWidth = font.width(title);
-        int toggleX = getX() + PAD + titleWidth + 3;
-
-        int profBtnX = toggleX + TOGGLE_WIDTH + 15;
-        int profBtnY = getY() + 3;
-
-        if (mouseY >= profBtnY && mouseY < profBtnY + 9) {
-            for (int i = 1; i <= 3; i++) {
-                int bx = profBtnX + (i - 1) * 11;
-                if (mouseX >= bx && mouseX < bx + 9) {
-                    BlacklistManager.setActiveProfile(i);
-                    scroll = 0;
-                    searchBox.setFocused(false);
-                    return true;
-                }
-            }
-        }
-
-        boolean clickedSearch = searchBox.mouseClicked(event, allowHandlingWhenUnhandled);
-        searchBox.setFocused(clickedSearch || searchBox.isMouseOver(mouseX, mouseY));
-        if (clickedSearch) {
+        int profile = profileAt(mouseX, mouseY);
+        if (profile > 0) {
+            BlacklistManager.setActiveProfile(profile);
+            searchBox.setFocused(false);
+            refreshEntries();
             return true;
         }
 
-        int sbX = getX() + getWidth() - SCROLLBAR_WIDTH - PAD;
-        int sbY = getY() + HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 2);
-        int trackHeight = maxRows * SLOT;
+        if (searchBox.isMouseOver(mouseX, mouseY)) {
+            if (button == 0) {
+                searchBox.mouseClicked(event, allowHandlingWhenUnhandled);
+                searchBox.setFocused(true);
+            }
+            return true;
+        }
+        searchBox.setFocused(false);
 
-        if (totalRows() > maxRows && button == 0
-                && mouseX >= sbX && mouseX < sbX + SCROLLBAR_WIDTH
-                && mouseY >= sbY && mouseY < sbY + trackHeight) {
-            int maxScrollValue = maxScroll();
-            int thumbHeight = Math.max(6, maxRows * trackHeight / totalRows());
-            int trackTravel = Math.max(1, trackHeight - thumbHeight);
-            int thumbY = sbY + (int) (trackTravel * ((float) scroll / maxScrollValue));
-
-            if (mouseY >= thumbY && mouseY < thumbY + thumbHeight) {
-                draggingScrollbar = true;
-            } else if (mouseY < thumbY) {
-                scroll(1);
-            } else {
-                scroll(-1);
+        if (button == 0 && scrollbar.maxScroll() > 0 && isOverScrollbar(mouseX, mouseY)) {
+            switch (scrollbar.trackClick(mouseY, contentTop(), trackHeight())) {
+                case THUMB -> draggingScrollbar = true;
+                case UP -> scrollbar.scrollBy(-1);
+                case DOWN -> scrollbar.scrollBy(1);
             }
             return true;
         }
 
-        if (button != 1) {
-            return true;
+        if (button == 1) {
+            BlacklistEntryView clicked = entryAt(mouseX, mouseY);
+            if (clicked != null) {
+                BlacklistManager.removeEntry(clicked.entry());
+                refreshEntries();
+                return true;
+            }
         }
 
+        return false;
+    }
+
+    private BlacklistEntryView entryAt(double mouseX, double mouseY) {
         int startX = getX() + PAD;
-        List<ItemStack> items = getFilteredItems();
-        for (int row = 0; row < getVisibleRows(); row++) {
+        int top = contentTop();
+        for (int row = 0; row < scrollbar.visibleRowCount(); row++) {
             for (int col = 0; col < COLS; col++) {
-                int index = (row + scroll) * COLS + col;
-                if (index >= items.size()) {
-                    continue;
+                int index = (row + scrollbar.getScroll()) * COLS + col;
+                if (index >= filteredEntries.size()) {
+                    return null;
                 }
                 int sx = startX + col * SLOT;
-                int sy = sbY + row * SLOT;
+                int sy = top + row * SLOT;
                 if (mouseX >= sx && mouseX < sx + SLOT && mouseY >= sy && mouseY < sy + SLOT) {
-                    BlacklistManager.removeFromBlacklist(items.get(index));
-                    return true;
+                    return filteredEntries.get(index);
                 }
             }
         }
-
-        return true;
+        return null;
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        if (!expanded) {
-            return false;
-        }
-        if (draggingScrollbar) {
-            updateScrollFromMouse(event.y());
+        if (expanded && draggingScrollbar) {
+            scrollbar.dragTo(event.y(), contentTop(), trackHeight());
             return true;
-        }
-        if (searchBox.isFocused()) {
-            return searchBox.mouseDragged(event, dragX, dragY);
         }
         return false;
     }
 
-    private void updateScrollFromMouse(double mouseY) {
-        int sbY = getY() + HEADER_HEIGHT + SEARCH_HEIGHT + (PAD * 2);
-        int trackHeight = maxRows * SLOT;
-        int maxScroll = maxScroll();
-        if (maxScroll <= 0) {
-            return;
-        }
-
-        int thumbHeight = Math.max(6, maxRows * trackHeight / totalRows());
-        int trackTravel = trackHeight - thumbHeight;
-        if (trackTravel <= 0) {
-            return;
-        }
-
-        double clampedMouseY = Math.max(sbY, Math.min(mouseY, sbY + trackHeight));
-        double relativeMouseY = Math.max(0, Math.min(clampedMouseY - sbY - thumbHeight / 2.0, trackTravel));
-        float scrollPercent = (float) (relativeMouseY / trackTravel);
-        setScroll(Math.round(scrollPercent * maxScroll));
-    }
-
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (!expanded) {
-            return false;
+        if (expanded && draggingScrollbar) {
+            draggingScrollbar = false;
+            return true;
         }
-        boolean wasDragging = draggingScrollbar;
-        draggingScrollbar = false;
-        boolean sbReleased = searchBox.mouseReleased(event);
-        return wasDragging || sbReleased;
+        return false;
     }
 
     @Override
@@ -449,9 +477,5 @@ public class BlacklistPanel extends AbstractWidget {
 
     public boolean isSearchFocused() {
         return expanded && searchBox.isFocused();
-    }
-
-    public void setSearchFocused(boolean focused) {
-        searchBox.setFocused(focused);
     }
 }

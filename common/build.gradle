@@ -16,6 +16,18 @@ dependencies {
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     compileOnly "net.blay09.mods:trashslot-common:${trashslot_neoforge_version}"
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        exceptionFormat 'full'
+    }
 }
 
 repositories {

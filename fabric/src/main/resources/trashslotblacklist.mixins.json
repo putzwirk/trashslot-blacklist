@@ -6,6 +6,7 @@
   "mixins": [],
   "client": [
     "AnvilScreenMixin",
+    "ClientPacketListenerMixin",
     "ContainerScreenAccessor",
     "ContainerScreenMixin",
     "ContainerScreenPanelMixin",

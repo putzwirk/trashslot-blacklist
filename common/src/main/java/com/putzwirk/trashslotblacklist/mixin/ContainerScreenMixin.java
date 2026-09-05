@@ -1,7 +1,7 @@
 package com.putzwirk.trashslotblacklist.mixin;
 
 import com.putzwirk.trashslotblacklist.BlacklistManager;
-import com.putzwirk.trashslotblacklist.BoxDebug;
+import com.putzwirk.trashslotblacklist.ButtonStateManager;
 import com.putzwirk.trashslotblacklist.gui.BlacklistButton;
 import com.putzwirk.trashslotblacklist.gui.BlacklistPanel;
 import com.putzwirk.trashslotblacklist.gui.PanelHolder;
@@ -65,12 +65,12 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             trashslotblacklist$button.setX(rect.getX() + rect.getWidth() - 6);
             trashslotblacklist$button.setY(rect.getY() - 2);
             trashslotblacklist$button.visible = true;
-            BoxDebug.instance.log("button shown comp=present rect=" + rect.getX() + "," + rect.getY() + "," + rect.getWidth() + "," + rect.getHeight()
-                    + " btn=" + trashslotblacklist$button.getX() + "," + trashslotblacklist$button.getY() + " screenH=" + this.height);
         } else {
             trashslotblacklist$button.visible = false;
-            BoxDebug.instance.log("button hidden comp=" + (component != null) + " visible=" + (component != null && component.isVisible()));
         }
+
+        ButtonStateManager.setHovered(trashslotblacklist$button.visible
+                && trashslotblacklist$button.isMouseOver(mouseX, mouseY));
 
         trashslotblacklist$button.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -88,14 +88,11 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             return;
         }
 
-        trashslotblacklist$panel.setSearchFocused(false);
+        boolean panelHit = trashslotblacklist$panel.mouseClicked(event, allowHandlingWhenUnhandled);
+        boolean buttonHit = trashslotblacklist$button.mouseClicked(event, allowHandlingWhenUnhandled);
 
-        if (trashslotblacklist$panel.mouseClicked(event, allowHandlingWhenUnhandled)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (trashslotblacklist$button.mouseClicked(event, allowHandlingWhenUnhandled)) {
+        if (panelHit || buttonHit
+                || (trashslotblacklist$panel.isExpanded() && trashslotblacklist$panel.isMouseOver(event.x(), event.y()))) {
             cir.setReturnValue(true);
         }
     }
@@ -130,8 +127,19 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void trashslotblacklist$onKeyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(event)) {
+        if (trashslotblacklist$panel == null) {
+            return;
+        }
+
+        if (trashslotblacklist$panel.keyPressed(event)) {
             cir.setReturnValue(true);
+            return;
+        }
+
+        if (trashslotblacklist$panel.isSearchFocused()) {
+            if (event.key() != 256) {
+                cir.setReturnValue(true);
+            }
             return;
         }
 

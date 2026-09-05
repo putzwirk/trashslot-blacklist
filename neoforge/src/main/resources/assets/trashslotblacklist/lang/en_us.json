@@ -4,5 +4,6 @@
   "trashslotblacklist.empty": "No items found",
   "trashslotblacklist.narration.enabled": "Blacklist enabled",
   "trashslotblacklist.narration.disabled": "Blacklist disabled",
-  "key.trashslotblacklist.trash_and_blacklist": "Trash & Blacklist Item"
+  "key.trashslotblacklist.trash_and_blacklist": "Trash & Blacklist Item",
+  "trashslotblacklist.remove_hint": "Right-click to remove"
 }

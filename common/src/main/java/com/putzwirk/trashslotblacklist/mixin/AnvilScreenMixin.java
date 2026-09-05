@@ -17,15 +17,8 @@ public abstract class AnvilScreenMixin {
         if (this instanceof PanelHolder holder) {
             BlacklistPanel panel = holder.trashslotblacklist$getPanel();
 
-            if (panel != null && panel.isSearchFocused()) {
-                if (event.key() == 256) {
-                    panel.setSearchFocused(false);
-                    cir.setReturnValue(true);
-                    return;
-                }
-
+            if (panel != null && panel.isSearchFocused() && event.key() != 256) {
                 panel.keyPressed(event);
-
                 cir.setReturnValue(true);
             }
         }
