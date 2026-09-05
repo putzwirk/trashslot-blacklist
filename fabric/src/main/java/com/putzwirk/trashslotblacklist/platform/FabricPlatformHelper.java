@@ -43,11 +43,11 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean simulate) {
+    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean deleteAll) {
         DeletionProvider provider = TrashSlotConfig.getDeletionProvider();
         if (provider == null) {
             return;
         }
-        provider.deleteContainerItem(menu, slotIndex, simulate, TrashSlotGuiHandler.getTrashSlot());
+        provider.deleteContainerItem(menu, slotIndex, deleteAll, TrashSlotGuiHandler.getTrashSlot());
     }
 }

@@ -13,20 +13,15 @@ public abstract class AnvilScreenMixin {
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void trashslotblacklist$onAnvilKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (this instanceof PanelHolder holder) {
-            BlacklistPanel panel = holder.trashslotblacklist$getPanel();
-
-            if (panel != null && panel.isSearchFocused()) {
-                if (keyCode == 256) {
-                    panel.setSearchFocused(false);
-                    cir.setReturnValue(true);
-                    return;
-                }
-
-                panel.keyPressed(keyCode, scanCode, modifiers);
-
-                cir.setReturnValue(true);
-            }
+        if (!(this instanceof PanelHolder holder)) {
+            return;
         }
+        BlacklistPanel panel = holder.trashslotblacklist$getPanel();
+        if (panel == null || !panel.isSearchFocused() || keyCode == 256) {
+            return;
+        }
+
+        panel.keyPressed(keyCode, scanCode, modifiers);
+        cir.setReturnValue(true);
     }
 }

@@ -7,6 +7,7 @@ import net.blay09.mods.trashslot.TrashHelper;
 import net.blay09.mods.trashslot.client.TrashSlotGuiHandler;
 import net.blay09.mods.trashslot.client.deletion.DeletionProvider;
 import net.blay09.mods.trashslot.config.TrashSlotConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -45,19 +46,15 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean simulate) {
+    public void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean deleteAll) {
         DeletionProvider provider = TrashSlotConfig.getDeletionProvider();
-        if (provider == null) {
+        if (provider == null || !TrashHelper.canDelete(menu.getSlot(slotIndex).getItem())) {
             return;
         }
-        ItemStack stack = menu.getSlot(slotIndex).getItem();
-        if (!TrashHelper.canDelete(stack)) {
-            return;
-        }
-        Player player = net.minecraft.client.Minecraft.getInstance().player;
+        Player player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }
-        provider.deleteContainerItem(player, menu, slotIndex, simulate, TrashSlotGuiHandler.getTrashSlot());
+        provider.deleteContainerItem(player, menu, slotIndex, deleteAll, TrashSlotGuiHandler.getTrashSlot());
     }
 }

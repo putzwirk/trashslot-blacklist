@@ -25,3 +25,17 @@ type = "required"
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "trashslot"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[dependencies.${mod_id}]]
+modId = "balm"
+type = "required"
+versionRange = "[21.0,)"
+ordering = "AFTER"
+side = "CLIENT"

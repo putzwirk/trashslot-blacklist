@@ -20,5 +20,5 @@ public interface IPlatformHelper {
 
     void trashDeleteCarried(Player player, ItemStack carried);
 
-    void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean simulate);
+    void trashDeleteContainerSlot(AbstractContainerMenu menu, int slotIndex, boolean deleteAll);
 }

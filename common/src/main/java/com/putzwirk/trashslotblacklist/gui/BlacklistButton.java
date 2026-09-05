@@ -35,9 +35,7 @@ public class BlacklistButton extends AbstractWidget {
             return;
         }
 
-        boolean hovered = isMouseOver(mouseX, mouseY);
-        ButtonStateManager.setHovered(hovered);
-
+        boolean hovered = ButtonStateManager.isHovered();
         boolean open = panel.isExpanded();
         int borderColor = open ? BORDER_OPEN : BORDER_CLOSED;
         int backgroundColor;

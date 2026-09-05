@@ -1,10 +1,12 @@
 {
   "required": true,
+  "minVersion": "0.8",
   "package": "com.putzwirk.trashslotblacklist.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
   "client": [
     "AnvilScreenMixin",
+    "ClientPacketListenerMixin",
     "ContainerScreenAccessor",
     "ContainerScreenMixin",
     "PlayerMixin",

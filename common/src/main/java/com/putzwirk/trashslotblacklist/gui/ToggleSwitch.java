@@ -9,13 +9,15 @@ import net.minecraft.network.chat.Component;
 
 public class ToggleSwitch extends AbstractWidget {
 
-    private static final int WIDTH = 18;
+    public static final int WIDTH = 18;
     private static final int HEIGHT = 7;
     private static final int KNOB_SIZE = 5;
+    private static final float ANIMATION_SPEED = 0.4f;
     private static final int TRACK_OFF = 0xFF3D3D3D;
     private static final int TRACK_OFF_HOVER = 0xFF4D4D4D;
     private static final int TRACK_ON = 0xFF2D5A2D;
     private static final int TRACK_ON_HOVER = 0xFF3D6A3D;
+    private static final int KNOB_COLOR = 0xFFE0E0E0;
 
     public interface OnToggle {
         void onToggle(boolean enabled);
@@ -44,9 +46,9 @@ public class ToggleSwitch extends AbstractWidget {
 
         float target = enabled ? 1f : 0f;
         if (animationProgress < target) {
-            animationProgress = Math.min(animationProgress + partialTick * 0.4f, target);
+            animationProgress = Math.min(animationProgress + partialTick * ANIMATION_SPEED, target);
         } else if (animationProgress > target) {
-            animationProgress = Math.max(animationProgress - partialTick * 0.4f, target);
+            animationProgress = Math.max(animationProgress - partialTick * ANIMATION_SPEED, target);
         }
 
         boolean hovered = isMouseOver(mouseX, mouseY);
@@ -59,28 +61,19 @@ public class ToggleSwitch extends AbstractWidget {
         int travel = WIDTH - KNOB_SIZE - 2;
         int knobX = x + 1 + Math.round(travel * animationProgress);
         int knobY = y + 1;
-        graphics.fill(knobX, knobY, knobX + KNOB_SIZE, knobY + KNOB_SIZE, 0xFFE0E0E0);
+        graphics.fill(knobX, knobY, knobX + KNOB_SIZE, knobY + KNOB_SIZE, KNOB_COLOR);
     }
 
     private int interpolateTrackColor(float progress, boolean hovered) {
-        if (progress <= 0f) {
-            return hovered ? TRACK_OFF_HOVER : TRACK_OFF;
-        }
-        if (progress >= 1f) {
-            return hovered ? TRACK_ON_HOVER : TRACK_ON;
-        }
         int off = hovered ? TRACK_OFF_HOVER : TRACK_OFF;
         int on = hovered ? TRACK_ON_HOVER : TRACK_ON;
-        int r = lerpChannel(off, on, progress, 16);
-        int g = lerpChannel(off, on, progress, 8);
-        int b = lerpChannel(off, on, progress, 0);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
-    }
-
-    private int lerpChannel(int from, int to, float progress, int shift) {
-        int a = (from >> shift) & 0xFF;
-        int b = (to >> shift) & 0xFF;
-        return Math.round(a + (b - a) * progress);
+        if (progress <= 0f) {
+            return off;
+        }
+        if (progress >= 1f) {
+            return on;
+        }
+        return ColorLerp.opaque(off, on, progress);
     }
 
     @Override
@@ -88,9 +81,7 @@ public class ToggleSwitch extends AbstractWidget {
         if (active && visible && button == 0 && isMouseOver(mouseX, mouseY)) {
             enabled = !enabled;
             playDownSound(Minecraft.getInstance().getSoundManager());
-            if (onToggle != null) {
-                onToggle.onToggle(enabled);
-            }
+            onToggle.onToggle(enabled);
             return true;
         }
         return false;

@@ -1,8 +1,10 @@
 {
+  "key.categories.trashslotblacklist": "Trashslot Blacklist",
+  "key.trashslotblacklist.trash_and_blacklist": "Blacklist item",
+  "trashslotblacklist.empty": "No items blacklisted.",
   "trashslotblacklist.panel_name": "Blacklist",
   "trashslotblacklist.search_hint": "Search...",
-  "trashslotblacklist.empty": "No items found",
   "trashslotblacklist.narration.enabled": "Blacklist enabled",
   "trashslotblacklist.narration.disabled": "Blacklist disabled",
-  "key.trashslotblacklist.trash_and_blacklist": "Trash & Blacklist Item"
+  "trashslotblacklist.remove_hint": "Right-click to remove"
 }

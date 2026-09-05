@@ -1,6 +1,7 @@
 package com.putzwirk.trashslotblacklist.mixin;
 
 import com.putzwirk.trashslotblacklist.BlacklistManager;
+import com.putzwirk.trashslotblacklist.ButtonStateManager;
 import com.putzwirk.trashslotblacklist.gui.BlacklistButton;
 import com.putzwirk.trashslotblacklist.gui.BlacklistPanel;
 import com.putzwirk.trashslotblacklist.gui.PanelHolder;
@@ -76,6 +77,9 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             trashslotblacklist$button.visible = false;
         }
 
+        ButtonStateManager.setHovered(trashslotblacklist$button.visible
+                && trashslotblacklist$button.isMouseOver(mouseX, mouseY));
+
         trashslotblacklist$button.render(graphics, mouseX, mouseY, partialTick);
         trashslotblacklist$panel.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -94,14 +98,11 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
             return;
         }
 
-        trashslotblacklist$panel.setSearchFocused(false);
+        boolean panelHit = trashslotblacklist$panel.mouseClicked(mouseX, mouseY, button);
+        boolean buttonHit = trashslotblacklist$button.mouseClicked(mouseX, mouseY, button);
 
-        if (trashslotblacklist$panel.mouseClicked(mouseX, mouseY, button)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (trashslotblacklist$button.mouseClicked(mouseX, mouseY, button)) {
+        if (panelHit || buttonHit
+                || (trashslotblacklist$panel.isExpanded() && trashslotblacklist$panel.isMouseOver(mouseX, mouseY))) {
             cir.setReturnValue(true);
         }
     }
@@ -136,8 +137,19 @@ public abstract class ContainerScreenMixin extends Screen implements PanelHolder
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void trashslotblacklist$onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (trashslotblacklist$panel != null && trashslotblacklist$panel.keyPressed(keyCode, scanCode, modifiers)) {
+        if (trashslotblacklist$panel == null) {
+            return;
+        }
+
+        if (trashslotblacklist$panel.keyPressed(keyCode, scanCode, modifiers)) {
             cir.setReturnValue(true);
+            return;
+        }
+
+        if (trashslotblacklist$panel.isSearchFocused()) {
+            if (keyCode != 256) {
+                cir.setReturnValue(true);
+            }
             return;
         }
 

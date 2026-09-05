@@ -2,15 +2,22 @@ package com.putzwirk.trashslotblacklist;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -19,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,33 +36,22 @@ public final class BlacklistManager {
     private static final String FILE_NAME = "TrashslotBlacklist.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private static final Map<Integer, Set<Item>> profiles = new HashMap<>();
-    private static int activeProfile = 1;
-    private static boolean enabled = true;
+    private static final BlacklistData data = new BlacklistData();
+    private static final Map<BlacklistEntry, Item> itemCache = new HashMap<>();
     private static String currentWorldIdentifier = null;
-
-    static {
-        profiles.put(1, new LinkedHashSet<>());
-        profiles.put(2, new LinkedHashSet<>());
-        profiles.put(3, new LinkedHashSet<>());
-    }
 
     private BlacklistManager() {
     }
 
     public static int getActiveProfile() {
-        return activeProfile;
+        return data.getActiveProfile();
     }
 
     public static void setActiveProfile(int profile) {
-        if (profile >= 1 && profile <= 3) {
-            activeProfile = profile;
+        checkAndReloadForCurrentWorld();
+        if (data.setActiveProfile(profile)) {
             save();
         }
-    }
-
-    private static Set<Item> currentList() {
-        return profiles.get(activeProfile);
     }
 
     public static void checkAndReloadForCurrentWorld() {
@@ -67,52 +63,18 @@ public final class BlacklistManager {
     }
 
     public static void load() {
+        data.clear();
+        itemCache.clear();
         Path path = configPath();
-        profiles.get(1).clear();
-        profiles.get(2).clear();
-        profiles.get(3).clear();
-        enabled = true;
-        activeProfile = 1;
-
         if (!Files.exists(path)) {
             return;
         }
 
         try (Reader reader = Files.newBufferedReader(path)) {
             JsonObject root = GSON.fromJson(reader, JsonObject.class);
-            if (root == null) {
-                return;
-            }
-
-            enabled = !root.has("enabled") || root.get("enabled").getAsBoolean();
-            if (root.has("activeProfile")) {
-                activeProfile = Math.max(1, Math.min(3, root.get("activeProfile").getAsInt()));
-            }
-
-            if (root.has("profiles")) {
-                JsonObject profsObj = root.getAsJsonObject("profiles");
-                for (int p = 1; p <= 3; p++) {
-                    String pKey = String.valueOf(p);
-                    if (profsObj.has(pKey)) {
-                        readItemList(profsObj.getAsJsonArray(pKey), profiles.get(p));
-                    }
-                }
-            } else if (root.has("items")) {
-                readItemList(root.getAsJsonArray("items"), profiles.get(1));
-            }
-        } catch (IOException e) {
+            data.fromJson(root);
+        } catch (Exception e) {
             Constants.LOG.error("Failed to load blacklist", e);
-        }
-    }
-
-    private static void readItemList(JsonArray array, Set<Item> targetSet) {
-        for (JsonElement element : array) {
-            JsonObject entry = element.isJsonObject() ? element.getAsJsonObject() : null;
-            String itemId = entry != null ? entry.get("item").getAsString() : element.getAsString();
-            ResourceLocation id = ResourceLocation.tryParse(itemId);
-            if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
-                targetSet.add(BuiltInRegistries.ITEM.get(id));
-            }
         }
     }
 
@@ -122,25 +84,12 @@ public final class BlacklistManager {
             if (path.getParent() != null) {
                 Files.createDirectories(path.getParent());
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            Constants.LOG.error("Failed to create blacklist directory", e);
         }
-
-        JsonObject root = new JsonObject();
-        root.addProperty("enabled", enabled);
-        root.addProperty("activeProfile", activeProfile);
-
-        JsonObject profsObj = new JsonObject();
-        for (int p = 1; p <= 3; p++) {
-            JsonArray items = new JsonArray();
-            for (Item item : profiles.get(p)) {
-                items.add(BuiltInRegistries.ITEM.getKey(item).toString());
-            }
-            profsObj.add(String.valueOf(p), items);
-        }
-        root.add("profiles", profsObj);
 
         try (Writer writer = Files.newBufferedWriter(path)) {
-            GSON.toJson(root, writer);
+            GSON.toJson(data.toJson(), writer);
         } catch (IOException e) {
             Constants.LOG.error("Failed to save blacklist", e);
         }
@@ -159,7 +108,7 @@ public final class BlacklistManager {
     }
 
     private static Path configPath() {
-        String worldDir = getActiveWorldIdentifier().replaceAll("[^a-zA-Z0-9._-]", "_");
+        String worldDir = BlacklistData.sanitizeWorldIdentifier(getActiveWorldIdentifier());
         return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("saves_blacklist")
                 .resolve(worldDir)
@@ -167,47 +116,172 @@ public final class BlacklistManager {
     }
 
     public static void addToBlacklist(ItemStack stack) {
-        if (stack.isEmpty()) {
+        if (stack == null || stack.isEmpty()) {
             return;
         }
         checkAndReloadForCurrentWorld();
-        if (currentList().add(stack.getItem())) {
+        BlacklistEntry entry = entryFor(stack);
+        if (entry != null && data.addEntry(entry)) {
             save();
         }
     }
 
-    public static void removeFromBlacklist(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return;
-        }
+    public static void removeEntry(BlacklistEntry entry) {
         checkAndReloadForCurrentWorld();
-        if (currentList().remove(stack.getItem())) {
+        if (entry != null && data.removeEntry(entry)) {
             save();
         }
     }
 
     public static boolean isBlacklisted(ItemStack stack) {
         checkAndReloadForCurrentWorld();
-        return enabled && !stack.isEmpty() && currentList().contains(stack.getItem());
+        return stack != null && !stack.isEmpty() && data.isEnabled() && findMatchingEntry(stack) != null;
     }
 
     public static boolean isBlacklistEnabled() {
         checkAndReloadForCurrentWorld();
-        return enabled;
+        return data.isEnabled();
     }
 
     public static void setBlacklistEnabled(boolean value) {
         checkAndReloadForCurrentWorld();
-        enabled = value;
+        data.setEnabled(value);
         save();
     }
 
-    public static List<ItemStack> getBlacklistedItems() {
+    public static List<BlacklistEntryView> getBlacklistedEntries() {
         checkAndReloadForCurrentWorld();
-        List<ItemStack> stacks = new ArrayList<>(currentList().size());
-        for (Item item : currentList()) {
-            stacks.add(new ItemStack(item));
+        List<BlacklistEntryView> views = new ArrayList<>();
+        for (BlacklistEntry entry : data.entriesOf(data.getActiveProfile())) {
+            ItemStack stack = displayStackOf(entry);
+            if (stack != null) {
+                views.add(new BlacklistEntryView(entry, stack));
+            }
         }
-        return stacks;
+        return views;
+    }
+
+    public static List<ItemStack> getBlacklistedItems() {
+        return getBlacklistedEntries().stream().map(BlacklistEntryView::stack).toList();
+    }
+
+    private static BlacklistEntry entryFor(ItemStack stack) {
+        String itemId = itemIdOf(stack.getItem());
+        if (itemId == null) {
+            return null;
+        }
+        if (stack.is(Items.ENCHANTED_BOOK)) {
+            List<BlacklistEntry.Enchantment> enchantments = storedEnchantmentsOf(stack);
+            if (!enchantments.isEmpty()) {
+                return BlacklistEntry.enchantedBook(itemId, enchantments);
+            }
+        }
+        return BlacklistEntry.any(itemId);
+    }
+
+    private static BlacklistEntry findMatchingEntry(ItemStack stack) {
+        for (BlacklistEntry entry : data.entriesOf(data.getActiveProfile())) {
+            if (matches(entry, stack)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    private static boolean matches(BlacklistEntry entry, ItemStack stack) {
+        Item item = itemOf(entry);
+        if (item == null || !stack.is(item)) {
+            return false;
+        }
+        if (entry.mode() == BlacklistEntry.Mode.ANY) {
+            return true;
+        }
+        return enchantmentIdsOf(stack).equals(entry.enchantmentIds());
+    }
+
+    private static Item itemOf(BlacklistEntry entry) {
+        return itemCache.computeIfAbsent(entry, e -> {
+            ResourceLocation id = ResourceLocation.tryParse(e.itemId());
+            if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+                return null;
+            }
+            return BuiltInRegistries.ITEM.get(id);
+        });
+    }
+
+    private static ItemStack displayStackOf(BlacklistEntry entry) {
+        Item item = itemOf(entry);
+        if (item == null) {
+            return null;
+        }
+        ItemStack stack = new ItemStack(item);
+        if (entry.mode() == BlacklistEntry.Mode.ENCHANT && !entry.enchantments().isEmpty()) {
+            applyStoredEnchantments(stack, entry.enchantments());
+        }
+        return stack;
+    }
+
+    private static void applyStoredEnchantments(ItemStack stack, List<BlacklistEntry.Enchantment> enchantments) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        Registry<Enchantment> registry = mc.level.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+        for (BlacklistEntry.Enchantment enchantment : enchantments) {
+            ResourceLocation location = ResourceLocation.tryParse(enchantment.id());
+            if (location == null) {
+                continue;
+            }
+            Holder<Enchantment> holder = registry.getHolder(location).orElse(null);
+            if (holder != null) {
+                mutable.set(holder, enchantment.level());
+            }
+        }
+        ItemEnchantments stored = mutable.toImmutable();
+        if (!stored.isEmpty()) {
+            stack.set(DataComponents.STORED_ENCHANTMENTS, stored);
+        }
+    }
+
+    private static List<BlacklistEntry.Enchantment> storedEnchantmentsOf(ItemStack stack) {
+        ItemEnchantments enchants = stack.get(DataComponents.STORED_ENCHANTMENTS);
+        if (enchants == null) {
+            enchants = stack.get(DataComponents.ENCHANTMENTS);
+        }
+        if (enchants == null || enchants.isEmpty()) {
+            return List.of();
+        }
+        List<BlacklistEntry.Enchantment> result = new ArrayList<>();
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchants.entrySet()) {
+            ResourceLocation id = entry.getKey().unwrapKey().map(ResourceKey::location).orElse(null);
+            if (id != null) {
+                result.add(new BlacklistEntry.Enchantment(id.toString(), entry.getIntValue()));
+            }
+        }
+        return result;
+    }
+
+    private static Set<String> enchantmentIdsOf(ItemStack stack) {
+        ItemEnchantments enchants = stack.get(DataComponents.STORED_ENCHANTMENTS);
+        if (enchants == null) {
+            enchants = stack.get(DataComponents.ENCHANTMENTS);
+        }
+        if (enchants == null) {
+            return Set.of();
+        }
+        Set<String> ids = new HashSet<>();
+        for (Holder<Enchantment> holder : enchants.keySet()) {
+            ResourceLocation id = holder.unwrapKey().map(ResourceKey::location).orElse(null);
+            if (id != null) {
+                ids.add(id.toString());
+            }
+        }
+        return ids;
+    }
+
+    private static String itemIdOf(Item item) {
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+        return key != null ? key.toString() : null;
     }
 }
